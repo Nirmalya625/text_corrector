@@ -1,0 +1,226 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Proofread — a proofreading desk</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,600;1,9..144,500&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#EAE3D0; --paper2:#E1D8BE; --paper-edge:#D6CBA9;
+  --ink:#26211A; --ink-soft:#6b6248; --rule:#bdb089;
+  --blue:#2e4c78; --blue-soft:#d9e2ee;
+  --red:#a1342a; --red-soft:#f0dcd6;
+  --radius:3px;
+}
+@media(prefers-color-scheme:dark){
+  :root{
+    --paper:#1b1812; --paper2:#211d16; --paper-edge:#332c1f;
+    --ink:#ece3cc; --ink-soft:#a79b78; --rule:#4a4330;
+    --blue:#90b1de; --blue-soft:#273349;
+    --red:#e2897b; --red-soft:#3c2521;
+  }
+}
+*{box-sizing:border-box}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{
+  margin:0;min-height:100%;background:var(--paper);color:var(--ink);
+  font-family:"Fraunces",Georgia,serif;
+  padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+  background-image:
+    repeating-linear-gradient(transparent, transparent 38px, var(--rule) 38px, var(--rule) 39px);
+  background-position:0 160px;
+}
+.mono{font-family:"IBM Plex Mono",ui-monospace,monospace}
+
+/* ---------- masthead ---------- */
+header.masthead{max-width:760px;margin:0 auto;padding:48px 24px 0}
+header.masthead .kicker{
+  font:500 .72rem/1 "IBM Plex Mono",monospace;letter-spacing:.06em;color:var(--ink-soft);
+  margin:0 0 10px;
+}
+header.masthead h1{
+  font:900 italic clamp(2.4rem,6vw,3.6rem)/1 "Fraunces",serif;margin:0;
+  letter-spacing:-.01em;
+}
+header.masthead p{
+  font:400 1.05rem/1.55 "Fraunces",serif;color:var(--ink-soft);margin:14px 0 0;max-width:52ch;
+}
+header.masthead .rule{height:1px;background:var(--ink);opacity:.75;margin:22px 0 0}
+
+/* ---------- sheets (two leaves, side by side) ---------- */
+main{max-width:1180px;margin:0 auto;padding:0 24px 64px}
+.spread{display:grid;grid-template-columns:1fr 1fr;gap:22px;margin-top:26px;align-items:start}
+@media(max-width:860px){.spread{grid-template-columns:1fr}}
+.sheet{background:var(--paper2);border:1px solid var(--paper-edge);
+  box-shadow:0 1px 0 var(--paper-edge), 0 18px 40px -28px rgba(0,0,0,.45)}
+.sheet-head{
+  display:flex;align-items:baseline;justify-content:space-between;gap:10px;
+  padding:14px 24px;border-bottom:1px solid var(--paper-edge);
+}
+.sheet-head .num{font:500 .78rem/1 "IBM Plex Mono",monospace;letter-spacing:.04em;color:var(--ink-soft)}
+
+.panel{padding:24px 24px 18px;min-height:300px}
+textarea{
+  width:100%;min-height:260px;border:0;outline:0;resize:vertical;background:transparent;
+  color:var(--ink);font:400 1.18rem/1.75 "Fraunces",Georgia,serif;
+}
+textarea::placeholder{color:var(--ink-soft)}
+textarea:focus-visible{outline:2px solid var(--blue);outline-offset:6px;border-radius:2px}
+
+#proof{font:400 1.18rem/1.9 "Fraunces",Georgia,serif;white-space:pre-wrap}
+#proof.empty{color:var(--ink-soft);font-style:italic}
+#proof.err{color:var(--red);font-style:italic}
+
+.mk{cursor:pointer;border:0;background:none;padding:0;font:inherit;color:inherit;display:inline}
+.mk .old{color:var(--red);text-decoration:line-through;text-decoration-thickness:1.5px;text-decoration-color:var(--red)}
+.mk .new{color:var(--blue);border-bottom:1.5px solid var(--blue);padding:0 1px}
+.mk.rm .new::before{content:"⌐";font-size:.8em;opacity:.6;margin-right:1px}
+.mk:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+
+.panel-foot{
+  display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+  padding:14px 24px 20px;border-top:1px solid var(--paper-edge);
+}
+button.act{
+  font:500 .8rem/1 "IBM Plex Mono",monospace;letter-spacing:.03em;
+  padding:9px 16px;border:1px solid var(--ink);background:transparent;color:var(--ink);
+  border-radius:var(--radius);cursor:pointer;
+}
+button.act.primary{background:var(--ink);color:var(--paper)}
+@media(prefers-color-scheme:dark){button.act.primary{color:var(--paper2)}}
+button.act:disabled{opacity:.4;cursor:default}
+button.act:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+.stats{margin-left:auto;font:400 .82rem/1 "IBM Plex Mono",monospace;color:var(--ink-soft)}
+.stats b{color:var(--ink);font-weight:500}
+
+/* ---------- query popover ---------- */
+#pop{
+  position:absolute;display:none;z-index:5;min-width:180px;max-width:260px;
+  background:var(--paper2);border:1px solid var(--ink);box-shadow:3px 3px 0 var(--ink);
+}
+#pop small{display:block;font:500 .68rem/1 "IBM Plex Mono",monospace;letter-spacing:.05em;color:var(--ink-soft);padding:9px 10px 0}
+#pop button{
+  display:block;width:100%;text-align:left;border:0;background:none;cursor:pointer;
+  font:400 1rem "Fraunces",serif;color:var(--ink);padding:7px 10px;
+}
+#pop button:hover,#pop button:focus-visible{background:var(--blue-soft);outline:0}
+#pop hr{border:0;border-top:1px solid var(--paper-edge);margin:4px 0}
+
+footer{max-width:760px;margin:0 auto;padding:0 24px 40px;color:var(--ink-soft);font:400 .85rem "IBM Plex Mono",monospace}
+footer .key{color:var(--blue)}.footer-red{color:var(--red)}
+
+@media(max-width:560px){.panel{padding:22px 18px 18px}.panel-foot{padding:12px 18px 16px}header.masthead{padding:32px 18px 0}}
+</style></head>
+<body>
+<header class="masthead">
+  <p class="kicker">a proofreading desk</p>
+  <h1>Proofread</h1>
+  <p>Write in the draft. Press Mark up and every slip — misspellings, their/there mix-ups, repeats, a/an — comes back with the fix and the reason for it.</p>
+  <div class="rule"></div>
+</header>
+
+<main>
+  <div class="spread">
+    <div class="sheet">
+      <div class="sheet-head"><span class="num">01 — Draft</span></div>
+      <div class="panel">
+        <textarea id="in" spellcheck="false" placeholder="Set your text here…">i went to a apple store tomorow and recieve my new phone. Their going to the the park definately becuase the weather is beutiful.</textarea>
+      </div>
+      <div class="panel-foot">
+        <button class="act primary" id="go">Mark up</button>
+        <button class="act" id="clr">Clear</button>
+      </div>
+    </div>
+
+    <div class="sheet">
+      <div class="sheet-head"><span class="num">02 — Proof</span></div>
+      <div class="panel">
+        <div id="proof" class="empty" aria-live="polite">Marks will appear here once you press Mark up.</div>
+      </div>
+      <div class="panel-foot">
+        <button class="act primary" id="copy" disabled>Copy clean text</button>
+        <span class="stats" id="stats"></span>
+      </div>
+    </div>
+  </div>
+</main>
+
+<footer><span class="key">— blue</span> marks the fix, <span class="footer-red">— red</span> marks what it replaced. Click a mark for other options.</footer>
+
+<div id="pop" role="dialog"></div>
+
+<script>
+const $=id=>document.getElementById(id);
+let cur=null, picks={};
+const esc=s=>s.replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+function render(){
+  const {original:t, changes:cs}=cur; let h="", p=0;
+  cs.forEach((c,i)=>{
+    const n = picks[i] ?? c.corrected;
+    h += esc(t.slice(p,c.start));
+    h += `<button class="mk ${n?'':'rm'}" data-i="${i}" title="${c.type}">`+
+         `<span class="old">${esc(c.original)}</span><span class="new">${n?esc(n):'removed'}</span></button>`;
+    p = c.end;
+  });
+  $("proof").className=""; $("proof").innerHTML = h + esc(t.slice(p));
+  const byType={}; cs.forEach(c=>byType[c.type]=(byType[c.type]||0)+1);
+  $("stats").innerHTML = cs.length
+    ? `<b>${cs.length}</b> mark${cs.length>1?'s':''} — ${Object.entries(byType).map(([k,v])=>v+" "+k).join(", ")}`
+    : "clean — no marks";
+}
+
+function finalText(){
+  const {original:t, changes:cs}=cur; let o="", p=0;
+  cs.forEach((c,i)=>{ o += t.slice(p,c.start) + (picks[i] ?? c.corrected); p = c.end; });
+  return (o + t.slice(p)).replace(/ {2,}/g," ").replace(/ +([,.;:!?])/g,"$1");
+}
+
+$("go").onclick = async ()=>{
+  const text = $("in").value;
+  $("go").disabled = true; $("go").textContent = "Marking up…";
+  try{
+    const r = await fetch("/api/correct",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({text})});
+    const d = await r.json();
+    if(!r.ok) throw new Error(d.error || "Request failed");
+    cur = d; picks = {}; render(); $("copy").disabled = false;
+  }catch(e){
+    cur=null; $("proof").className="err"; $("proof").textContent = e.message;
+    $("copy").disabled = true;
+  }
+  $("go").disabled = false; $("go").textContent = "Mark up";
+};
+
+$("clr").onclick = ()=>{ $("in").value=""; $("in").focus(); };
+
+$("copy").onclick = async ()=>{
+  if(!cur) return;
+  await navigator.clipboard.writeText(finalText());
+  const b=$("copy"); const old=b.textContent;
+  b.textContent="Copied"; setTimeout(()=>b.textContent=old,1200);
+};
+
+const pop = $("pop");
+$("proof").onclick = e=>{
+  const b = e.target.closest(".mk");
+  if(!b){ pop.style.display="none"; return; }
+  const i=+b.dataset.i, c=cur.changes[i], r=b.getBoundingClientRect();
+  const opts = c.suggestions.filter(s=>s!==c.original);
+  pop.innerHTML = `<small>${esc(c.type)}</small>` +
+    opts.map(s=>`<button data-i="${i}" data-s="${esc(s)}">${s?esc(s):'remove word'}</button>`).join("") +
+    `<hr><button data-i="${i}" data-s="${esc(c.original)}">keep "${esc(c.original)}"</button>`;
+  pop.style.display="block";
+  pop.style.left = Math.min(r.left+scrollX, innerWidth-280)+"px";
+  pop.style.top = r.bottom+scrollY+6+"px";
+};
+pop.onclick = e=>{
+  const b=e.target.closest("button"); if(!b) return;
+  picks[b.dataset.i] = b.dataset.s; pop.style.display="none"; render();
+};
+document.addEventListener("keydown", e=>{ if(e.key==="Escape") pop.style.display="none"; });
+document.addEventListener("click", e=>{
+  if(!pop.contains(e.target) && !e.target.closest(".mk")) pop.style.display="none";
+});
+</script>
+</body></html>
